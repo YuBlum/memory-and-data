@@ -150,16 +150,15 @@ input_byte_decimal :: proc "contextless" (cursor: ^uint, byte: ^u8) {
 }
 
 main :: proc() {
-  VIGNETTE_SHADER ::
-`
+  VIGNETTE_SHADER :: `
 #version 330
 in vec2 fragTexCoord;
 out vec4 f_color;
 uniform sampler2D tex0;
-void main() { f_color = texture(tex0, fragTexCoord) * min((1.0 - length(fragTexCoord - 0.5)) * 1.3, 1.0); }
-`
-  WINDOW_W :: 1280
-  WINDOW_H :: 1280
+void main() { f_color = texture(tex0, fragTexCoord) * min((1.0 - length(fragTexCoord - 0.5)) * 1.3, 1.0); } `
+  SCALE :: 0.5
+  WINDOW_W :: 1280 * SCALE
+  WINDOW_H :: 1280 * SCALE
 
   rl.InitWindow(WINDOW_W, WINDOW_H, "Course")
   defer rl.CloseWindow()
@@ -167,14 +166,14 @@ void main() { f_color = texture(tex0, fragTexCoord) * min((1.0 - length(fragTexC
   vignette_sh := rl.LoadShaderFromMemory(nil, VIGNETTE_SHADER)
   rendertex := rl.LoadRenderTexture(WINDOW_W, WINDOW_H)
 
-  BG_RECT_SIZE  :: 32
+  BG_RECT_SIZE  :: 32 * SCALE
   BG_SPEED      :: 80
   bg_rect_color := [?]rl.Color{{0x40, 0x28, 0x3c, 0xff}, {0x22, 0x20, 0x34, 0xff}}
   bg_offset: [2]f32
 
-  BYTE_BOX_SIZE_SELECTED  :: 200
-  BYTE_BOX_SIZE           :: 150
-  BYTE_BOX_GAP            :: 50
+  BYTE_BOX_SIZE_SELECTED  :: 200 * SCALE
+  BYTE_BOX_SIZE           :: 150 * SCALE
+  BYTE_BOX_GAP            :: 50  * SCALE
   BYTE_BOX_POS            :: [2]f32{WINDOW_W * 0.5, WINDOW_H * 0.5}
   BYTE_BOX_CHANGE_SPEED   :: 6
   memory: [0x100]u8
@@ -206,7 +205,7 @@ void main() { f_color = texture(tex0, fragTexCoord) * min((1.0 - length(fragTexC
   jump_mode: bool
   jump_to_memory_address: u8
 
-  monocraft_fnt := rl.LoadFontEx("Monocraft.ttf", 64, nil, 0)
+  monocraft_fnt := rl.LoadFontEx("Monocraft.ttf", 64 * SCALE, nil, 0)
 
   for !rl.WindowShouldClose() {
     dt := rl.GetFrameTime()
@@ -415,42 +414,66 @@ void main() { f_color = texture(tex0, fragTexCoord) * min((1.0 - length(fragTexC
             if !first_step(&execution_step, &execution_register, memory[current_byte]) {
               registers[execution_register] = memory[current_byte]
               current_instruction_exec = .NOP
-            } else if execution_register >= len(registers) do end_execution = true
+            } else if execution_register >= len(registers) {
+              end_execution = true
+              fmt.println("error: unknown register")
+            }
           case .ADD:
             if !first_step(&execution_step, &execution_register, memory[current_byte]) {
               registers[execution_register] += memory[current_byte]
               current_instruction_exec = .NOP
-            } else if execution_register >= len(registers) do end_execution = true
+            } else if execution_register >= len(registers) {
+              end_execution = true
+              fmt.println("error: unknown register")
+            }
           case .SUB:
             if !first_step(&execution_step, &execution_register, memory[current_byte]) {
               registers[execution_register] -= memory[current_byte]
               current_instruction_exec = .NOP
-            } else if execution_register >= len(registers) do end_execution = true
+            } else if execution_register >= len(registers) {
+              end_execution = true
+              fmt.println("error: unknown register")
+            }
           case .AND:
             if !first_step(&execution_step, &execution_register, memory[current_byte]) {
               registers[execution_register] &= memory[current_byte]
               current_instruction_exec = .NOP
-            } else if execution_register >= len(registers) do end_execution = true
+            } else if execution_register >= len(registers) {
+              end_execution = true
+              fmt.println("error: unknown register")
+            }
           case .XOR:
             if !first_step(&execution_step, &execution_register, memory[current_byte]) {
               registers[execution_register] ~= memory[current_byte]
               current_instruction_exec = .NOP
-            } else if execution_register >= len(registers) do end_execution = true
+            } else if execution_register >= len(registers) {
+              end_execution = true
+              fmt.println("error: unknown register")
+            }
           case .AMOV:
             if !first_step(&execution_step, &execution_register, memory[current_byte]) {
               memory[memory[current_byte]] = registers[execution_register]
               current_instruction_exec = .NOP
-            } else if execution_register >= len(registers) do end_execution = true
+            } else if execution_register >= len(registers) {
+              end_execution = true
+              fmt.println("error: unknown register")
+            }
           case .NAND:
             if !first_step(&execution_step, &execution_register, memory[current_byte]) {
               registers[execution_register] = ~(registers[execution_register] & memory[current_byte])
               current_instruction_exec = .NOP
-            } else if execution_register >= len(registers) do end_execution = true
+            } else if execution_register >= len(registers) {
+              end_execution = true
+              fmt.println("error: unknown register")
+            }
           case .OR:
             if !first_step(&execution_step, &execution_register, memory[current_byte]) {
               registers[execution_register] |= memory[current_byte]
               current_instruction_exec = .NOP
-            } else if execution_register >= len(registers) do end_execution = true
+            } else if execution_register >= len(registers) {
+              end_execution = true
+              fmt.println("error: unknown register")
+            }
           case .JMP:
             current_byte = int(memory[current_byte]) - 1
             change_byte_timer = 1
@@ -462,7 +485,10 @@ void main() { f_color = texture(tex0, fragTexCoord) * min((1.0 - length(fragTexC
                 change_byte_timer = 1
               }
               current_instruction_exec = .NOP
-            } else if execution_register >= len(registers) do end_execution = true
+            } else if execution_register >= len(registers) {
+              end_execution = true
+              fmt.println("error: unknown register")
+            }
           case .NOP:
           }
         } else {
@@ -536,22 +562,22 @@ void main() { f_color = texture(tex0, fragTexCoord) * min((1.0 - length(fragTexC
         rl.DrawRectangleV(pos + 16 - sizev * 0.5, sizev, box_color_shadow)
         rl.DrawRectangleV(pos - sizev * 0.5, sizev, box_color)
         address_txt := int_to_cstring(i)
-        address_size: f32 = 64
+        address_size: f32 = 64 * SCALE
         address_dim := rl.MeasureTextEx(monocraft_fnt, address_txt, address_size, 0)
         rl.DrawTextEx(monocraft_fnt, address_txt, pos - {size * 0.5 + address_dim.x, address_dim.y * 0.5}, address_size, 0, rl.WHITE)
         byte_txt: cstring
         byte_size_min: f32
         byte_size_max: f32
-        byte_size_min = 48
-        byte_size_max = 64
+        byte_size_min = 48 * SCALE
+        byte_size_max = 64 * SCALE
         if memory_is_instruction[i] {
           byte_txt = instruction_to_string(InstructionType(byte))
         } else {
           switch memory_display_mode {
           case .BINARY:
             byte_txt = byte_bin_to_cstring(byte)
-            byte_size_min = 32
-            byte_size_max = 40
+            byte_size_min = 32 * SCALE
+            byte_size_max = 40 * SCALE
           case .HEXADECIMAL:
             byte_txt = byte_hex_to_cstring(byte)
           case .DECIMAL:
@@ -570,23 +596,23 @@ void main() { f_color = texture(tex0, fragTexCoord) * min((1.0 - length(fragTexC
         rl.DrawTextEx(monocraft_fnt, byte_txt, pos - byte_dim * 0.5, byte_size, 0, rl.WHITE)
         pos.y += size + BYTE_BOX_GAP
       }
-      if insert_mode do rl.DrawTextEx(monocraft_fnt, "INSIRA", {0, WINDOW_H-64}, 64, 0, rl.WHITE)
-      if execution_mode do rl.DrawTextEx(monocraft_fnt, "EXECUTANDO", {0, WINDOW_H-64}, 64, 0, rl.WHITE)
+      if insert_mode do rl.DrawTextEx(monocraft_fnt, "INSIRA", {0, WINDOW_H-(64 * SCALE)}, 64 * SCALE, 0, rl.WHITE)
+      if execution_mode do rl.DrawTextEx(monocraft_fnt, "EXECUTANDO", {0, WINDOW_H-(64 * SCALE)}, 64 * SCALE, 0, rl.WHITE)
       if instruction_mode {
         str_buf[len(fmt.bprintf(str_buf[:], "INSTRUCAO:%s", instruction_to_string(current_instruction_mode)))] = 0
-        rl.DrawTextEx(monocraft_fnt, cstring(raw_data(str_buf[:])), {}, 64, 0, rl.WHITE)
+        rl.DrawTextEx(monocraft_fnt, cstring(raw_data(str_buf[:])), {}, 64 * SCALE, 0, rl.WHITE)
       }
       if jump_mode {
         jump_address_txt := byte_dec_to_cstring(jump_to_memory_address)
-        jump_address_pos := [2]f32{0, WINDOW_H-64}
-        jump_address_size := f32(64)
+        jump_address_pos := [2]f32{0, WINDOW_H-(64 * SCALE)}
+        jump_address_size: f32 = 64 * SCALE
         jump_address_dim := rl.MeasureTextEx(monocraft_fnt, jump_address_txt, jump_address_size, 0)
         w := jump_address_size/2
         dim := [2]f32{w, 8.0/6.0 * w}
         rl.DrawRectangleV(jump_address_pos + {(w * f32(insert_cursor)), dim.y * 0.5 - 5}, dim, {0xff, 0xff, 0xff, 0x33})
         rl.DrawTextEx(monocraft_fnt, jump_address_txt, jump_address_pos, jump_address_size, 0, rl.WHITE)
       }
-      REG_BOX :: [2]f32{272, 64}
+      REG_BOX :: [2]f32{272 * SCALE, 64 * SCALE}
       for reg, i in registers {
         pos := [2]f32{WINDOW_W - REG_BOX.x - 32, 32 + f32(i) * (REG_BOX.y + 32)}
         rl.DrawRectangleV(pos + 10, REG_BOX, BOX_COLOR_SHADOW)
